@@ -1,0 +1,56 @@
+//actually only works only for values of
+//4.6cm - 18 cm
+
+#include <SharpDistSensor.h>
+
+// Analog pin to which the sensor is connected
+const byte sensorPin = A0;
+
+// Window size of the median filter (odd number, 1 = no filtering)
+const byte mediumFilterWindowSize = 5;
+
+// Create an object instance of the SharpDistSensor class
+SharpDistSensor sensor(sensorPin, mediumFilterWindowSize);
+
+/*
+ * Polynomial fit curve coefficients C0 to C5 in relation:
+ * Distance = C0 + C1*A + C2*A^2 + ... + C5*A^5
+ * where A is the analog value read from the sensor
+ * One coefficient minimum, six maximum (5th order polynomial)
+ */
+//const float polyCoefficients[] = {421.44, -1025.4, 1077.8, -507.6, 87.472};
+const float polyCoefficients[] = {449.65, -5.354, 0.0279, -7E-5, 6E-8};
+const byte nbCoefficients = 5;  // Number of coefficients
+
+/*
+ * Minimum and maximum analog values for which to return a distance
+ * These should represent a range of analog values within which the
+ * polynomial fit curve is valid.
+ */
+const unsigned int minVal = 67; // ~ 200mm
+const unsigned int maxVal = 362; // ~20mm
+
+void setup() {
+  Serial.begin(9600);
+
+  // Set custom polynomial fit curve coefficients and range
+  sensor.setPolyFitCoeffs(nbCoefficients, polyCoefficients, minVal, maxVal);
+}
+
+void loop() {
+  /* Print raw analog value. This step is not required to read the sensor,
+     it is included here to show the relation between the raw analog value
+     and the returned distance. */
+  Serial.print(analogRead(sensorPin));
+
+  Serial.print(", ");
+
+  // Get distance from sensor
+  unsigned int distance = sensor.getDist();
+
+  // Print distance to Serial
+  Serial.println(distance);
+
+  // Wait some time
+  delay(50);
+}
