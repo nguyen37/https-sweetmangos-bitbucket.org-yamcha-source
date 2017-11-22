@@ -19,3 +19,18 @@ http://andrewjkramer.net/motor-encoders-arduino/
 #Motor Control
 ### How to use a DC Motor 101 ###
 https://www.youtube.com/watch?v=dyjo_ggEtVU&t=1669s
+# Hareware Used #
+Magnetic encoder sensors:
+https://www.pololu.com/product/3081/resources
+
+Micro Metal gearmotor
+https://www.pololu.com/product/2216
+
+White wheels:
+https://www.pololu.com/product/1454
+
+Bracket:
+https://www.pololu.com/product/989
+
+Caster Wheels:
+https://www.pololu.com/product/951
