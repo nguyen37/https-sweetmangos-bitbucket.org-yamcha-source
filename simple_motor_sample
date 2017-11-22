@@ -1,0 +1,58 @@
+//motor_control_sample
+//Nicholas Nguyen
+//11/21/2017
+//SIMPLE_MOTOR_CONTROL
+
+//setup motor pins
+#define RH_MOTOR_A 11
+#define RH_MOTOR_B 10
+#define RH_MOTOR_EN 9
+#define LH_MOTOR_A 8
+#define LH_MOTOR_B 7
+#define LH_MOTOR_EN 6
+
+int SPEED = 0;
+//can use this if you want to show going forward or backwards
+void goForward(void);
+void goBackward(void);
+
+void setup() {
+  //declare pin output for motors
+  pinMode(RH_MOTOR_A, OUTPUT);
+  pinMode(RH_MOTOR_B, OUTPUT);
+  pinMode(RH_MOTOR_EN, OUTPUT);
+  //un-comment below if you want to use another motor
+  //pinMode(LH_MOTOR_A, OUTPUT);
+  //pinMode(LH_MOTOR_B, OUTPUT);
+  //pinMode(LH_MOTOR_EN, OUTPUT);
+
+  Serial.begin(9600);
+}
+
+void loop() {
+  //basic function: make motor move straight
+  SPEED = 200; //DEFAULT SPEED, CAN CONTROL SPEED FROM 0 - 255
+  digitalWrite(RH_MOTOR_A, HIGH);
+  digitalWrite(RH_MOTOR_B, LOW);
+  analogWrite(RH_MOTOR_EN, SPEED);
+  Serial.print("Going forward at the moment");
+  delay(1000);
+}
+
+void goForward() {
+  digitalWrite(RH_MOTOR_A, HIGH);
+  digitalWrite(RH_MOTOR_B, LOW);
+  //digitalWrite(LH_MOTOR_A, LOW);
+  //digitalWrite(LH_MOTOR_B, HIGH);
+  analogWrite(RH_MOTOR_EN, SPEED);
+  //analogWrite(LH_MOTOR_EN, SPEED);
+}
+
+void goBackward() {
+  digitalWrite(RH_MOTOR_A, LOW);
+  digitalWrite(RH_MOTOR_B, HIGH);
+  //digitalWrite(LH_MOTOR_A, HIGH);
+  //digitalWrite(LH_MOTOR_B, LOW);
+  analogWrite(RH_MOTOR_EN, SPEED);
+  //analogWrite(LH_MOTOR_EN,SPEED);
+}
