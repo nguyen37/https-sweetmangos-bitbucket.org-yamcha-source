@@ -1,39 +1,28 @@
-
+//Nicholas Nguyen
+//11/23/2017
 // pins for the encoder inputs
 #define RH_ENCODER_A 5
 #define RH_ENCODER_B 4
 #define LH_ENCODER_A 3
 #define LH_ENCODER_B 2
-//pints for motor controls
-#define RH_MOTOR_A 9
-#define RH_MOTOR_B 8
-#define LH_MOTOR_A 7
-#define LH_MOTOR_B 6
 // variables to store the number of encoder pulses
 // for each motor
-
-
 
 volatile unsigned long leftCount = 0;
 volatile unsigned long rightCount = 0;
 
 void setup() {
   //intialize encoders
-  pinMode(LH_ENCODER_A, OUTPUT);
-  pinMode(LH_ENCODER_B, OUTPUT);
-  pinMode(RH_ENCODER_A, OUTPUT);
-  pinMode(RH_ENCODER_B, OUTPUT);
-  //initialize motors
-  pinMode(RH_MOTOR_A, OUTPUT);
-  pinMode(RH_MOTOR_B, OUTPUT);
-  pinMode(LH_MOTOR_A, OUTPUT);
-  pinMode(LH_MOTOR_B, OUTPUT);
+  pinMode(LH_ENCODER_A, INPUT);
+  pinMode(LH_ENCODER_B, INPUT);
+  pinMode(RH_ENCODER_A, INPUT);
+  pinMode(RH_ENCODER_B, INPUT);
   
   // initialize hardware interrupts
   attachInterrupt(digitalPinToInterrupt(LH_ENCODER_A), leftEncoderEvent, CHANGE);
-  attachInterrupt(digitalPinToInterrupt(LH_ENCODER_B), leftEncoderEvent, CHANGE);
+  //attachInterrupt(digitalPinToInterrupt(LH_ENCODER_B), leftEncoderEvent, CHANGE);
   attachInterrupt(digitalPinToInterrupt(RH_ENCODER_A), rightEncoderEvent, CHANGE);
-  attachInterrupt(digitalPinToInterrupt(RH_ENCODER_B), rightEncoderEvent, CHANGE);
+  //attachInterrupt(digitalPinToInterrupt(RH_ENCODER_B), rightEncoderEvent, CHANGE);
   Serial.begin(9600);
 }
 
