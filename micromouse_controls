@@ -1,0 +1,146 @@
+#include <SharpDistSensor.h> //IR sensor library
+
+void rightEncoderEvent(void);
+void rightEncoderEvent(void);
+void move_forward(void);
+void move_backward(void);
+void right_turn(void);
+void left_turn(void);
+
+// pins for the encoder inputs
+#define RH_ENCODER_A 5
+#define RH_ENCODER_B 4
+#define LH_ENCODER_A 3
+#define LH_ENCODER_B 2
+volatile unsigned long leftCount = 0;
+volatile unsigned long rightCount = 0;
+
+//pins for motor controls
+#define RH_MOTOR_A 11
+#define RH_MOTOR_B 10
+#define RH_MOTOR_EN 9
+#define LH_MOTOR_A 8
+#define LH_MOTOR_B 7
+#define LH_MOTOR_EN 6
+int SPEED = 200;        //SET SPEED OF MOTORS HERE
+
+//IR SENSOR SETUP:
+//pins for IR sensors
+const byte RH_IR_pin = A0;
+const byte LH_IR_pin = A1;
+const byte CN_IR_pin = A2;
+//Window size of the median filter (odd number, 1 = no filtering)
+const byte mediumFilterWindowSize = 5; 
+// Create an object instance of the SharpDistSensor class
+SharpDistSensor RH_IR(RH_IR_pin, mediumFilterWindowSize);
+SharpDistSensor LH_IR(LH_IR_pin, mediumFilterWindowSize);
+SharpDistSensor CN_IR(CN_IR_pin, mediumFilterWindowSize);
+const float polyCoefficients[] = {449.65, -5.354, 0.0279, -7E-5, 6E-8};
+const byte nbCoefficients = 5;
+const unsigned int minVal = 67; // ~ 200mm
+const unsigned int maxVal = 362; // ~20mm
+// variables to store the number of encoder pulses for each motor
+
+void setup() {
+  //intialize encoders
+  pinMode(LH_ENCODER_A, OUTPUT);
+  pinMode(LH_ENCODER_B, OUTPUT);
+  pinMode(RH_ENCODER_A, OUTPUT);
+  pinMode(RH_ENCODER_B, OUTPUT);
+  //initialize motors
+  pinMode(RH_MOTOR_A, OUTPUT);
+  pinMode(RH_MOTOR_B, OUTPUT);
+  pinMode(LH_MOTOR_A, OUTPUT);
+  pinMode(LH_MOTOR_B, OUTPUT);
+  // initialize hardware interrupts
+  attachInterrupt(digitalPinToInterrupt(LH_ENCODER_A), leftEncoderEvent, CHANGE);
+  //attachInterrupt(digitalPinToInterrupt(LH_ENCODER_B), leftEncoderEvent, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(RH_ENCODER_A), rightEncoderEvent, CHANGE);
+  //attachInterrupt(digitalPinToInterrupt(RH_ENCODER_B), rightEncoderEvent, CHANGE);
+  
+  RH_IR.setPolyFitCoeffs(nbCoefficients, polyCoefficients, minVal, maxVal);
+  LH_IR.setPolyFitCoeffs(nbCoefficients, polyCoefficients, minVal, maxVal);
+  CN_IR.setPolyFitCoeffs(nbCoefficients, polyCoefficients, minVal, maxVal);
+  Serial.begin(9600); 
+}
+
+void loop() {
+  //encoder debug
+  /*Serial.print("Right Count: ");
+  Serial.println(rightCount);
+  Serial.print("Left Count: ");
+  Serial.println(leftCount);
+  Serial.println();*/
+  //read IR sensor values:
+  unsigned int RH_dist_val = RH_IR.getDist();
+  Serial.println("RH distance: ");
+  Serial.println(RH_dist);
+  Serial.println();
+  unsigned int LH_dist_val = LH_IR.getDist();
+  Serial.println("LH distance: ");
+  Serial.println(LH_dist);
+  Serial.println();
+  unsigned int CN_dist_val = CN_IR.getDist();
+  Serial.println("CN distance: ");
+  Serial.println(CN_dist);
+  Serial.println();
+  // Wait some time
+  delay(50);
+}
+
+// encoder event for the interrupt call
+void leftEncoderEvent() {
+  if (digitalRead(LH_ENCODER_A) == HIGH) {
+    if (digitalRead(LH_ENCODER_B) == LOW) {
+      leftCount++;
+    } else {
+      leftCount--;
+    }
+  } else {
+    if (digitalRead(LH_ENCODER_B) == LOW) {
+      leftCount--;
+    } else {
+      leftCount++;
+    }
+  }
+}
+// encoder event for the interrupt call
+void rightEncoderEvent() {
+  if (digitalRead(RH_ENCODER_A) == HIGH) {
+    if (digitalRead(RH_ENCODER_B) == LOW) {
+      rightCount++;
+    } else {
+      rightCount--;
+    }
+  } else {
+    if (digitalRead(RH_ENCODER_B) == LOW) {
+      rightCount--;
+    } else {
+      rightCount++;
+    }
+  }
+}
+
+void move_forward() {
+  //NOTE: EDIT THIS TO MAKE ROBOT GO ON BLOCK FORWARD
+  while(/*something that tells it when to stop*/) {
+    digitalWrite(RH_MOTOR_A, HIGH);
+    digitalWrite(RH_MOTOR_B, LOW);
+    digitalWrite(LH_MOTOR_A, LOW);
+    digitalWrite(LH_MOTOR_B, HIGH);
+    analogWrite(RH_MOTOR_EN, SPEED);
+    analogWrite(LH_MOTOR_EN, SPEED);
+  }
+}
+
+void move_backward() {
+  //NOTE: EDIT THIS TO MAKE ROBOT GO ON BLOCK BACKWARD
+  while(/*something that tells it when to stop*/) {
+    digitalWrite(RH_MOTOR_A, LOW);
+    digitalWrite(RH_MOTOR_B, HIGH);
+    digitalWrite(LH_MOTOR_A, HIGH);
+    digitalWrite(LH_MOTOR_B, LOW);
+    analogWrite(RH_MOTOR_EN, SPEED);
+    analogWrite(LH_MOTOR_EN, SPEED);
+  }
+}
