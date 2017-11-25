@@ -15,7 +15,7 @@ https://arduino.stackexchange.com/questions/1784/how-many-interrupt-pins-can-an-
 
 ### How to use the encoders + motors ###
 http://andrewjkramer.net/motor-encoders-arduino/
-
+Note: There are only two interrupt pins on the Arudino Uno: D2 and D3
 #Motor Control
 ### How to use a DC Motor 101 ###
 https://www.youtube.com/watch?v=dyjo_ggEtVU&t=1669s
