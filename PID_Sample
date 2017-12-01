@@ -1,0 +1,401 @@
+#define leftRVR 4
+#define leftFWD 7
+#define rightFWD 5
+#define rightRVR 6
+#define rightEN 10
+#define leftEN 9
+#define encoderLeft 10000
+#define encoderRight 10001
+
+#define echoPin1 A2
+#define trigPin1 A1
+#define echoPin2 A3
+#define trigPin2 A4
+
+
+#define PRINTALL
+
+float ERROR_CONSTANT_P = 1;
+float ERROR_CONSTANT_I = 2;
+float ERROR_CONSTANT_D = 1;
+
+int deltaMillis=0, oldMillis=0;
+float omegaL = 0;
+float omegaR = 0;
+
+float accelL = 0;
+float accelR = 0;
+
+float oldOmegaL = 0;
+float oldOmegaR = 0;
+
+int totalClicksRight = 0, totalClicksLeft = 0;
+int current_L_clicks = 0, current_R_clicks = 0;
+int totalAdjust = 0;
+bool printStuff = false;
+bool adjusted = false;
+int integral_feedback = 0, lastAdjust = 0, adjustAmount = 0, derivative_feedback = 0, proportional_feedback = 0;
+float revsLeft = 0, revsRight = 0;
+bool stopThisBot = false;
+int error_factor;
+float distance1, distance2;
+float duration;
+
+int leftPWM, rightPWM;
+int old_proportional_feedback;
+bool hasSlowed = false;
+void setup() 
+{
+  Serial.begin(115200);
+
+  pinMode(trigPin1, OUTPUT);
+  pinMode(echoPin1, INPUT);
+  pinMode(trigPin2, OUTPUT);
+  pinMode(echoPin2, INPUT);  
+
+  pinMode(4, OUTPUT);  
+  pinMode(5, OUTPUT);
+  pinMode(6, OUTPUT);
+  pinMode(7, OUTPUT); //  
+  
+  pinMode(9, OUTPUT); // enable 3,4
+  pinMode(10, OUTPUT); // enable 1,2
+  pinMode(13, OUTPUT);
+
+  attachInterrupt(digitalPinToInterrupt(2), countLeft, RISING);
+  attachInterrupt(digitalPinToInterrupt(3), countRight, RISING);   
+}
+
+void countRight() 
+{
+  totalClicksRight++;
+  current_R_clicks++;
+} // end countRight();
+
+void countLeft() 
+{ 
+  totalClicksLeft++;
+  current_L_clicks++;
+
+  if (totalClicksLeft % 5 == 0)  // was 35, every 5 lh ticks, run if statement
+  {
+    printStuff = true;, 
+    deltaMillis = millis() - oldMillis; //change in time (milliseconds) since function was last called
+    oldMillis = millis(); //preps time for next round
+    
+    omegaL = (float(current_L_clicks) / 140) * (1,000,000 / deltaMillis); //140 ticks = 1 revolution (ours will be 2520 ticks per revolution
+    omegaL /= 1000; //1,000,000 to not lose values; 1000 to get this from raidans/ms -> raidans/s
+
+    omegaR = (float(current_R_clicks) / 140) * (1,000,000 / deltaMillis);
+    omegaR /= 1000;
+
+    accelL = omegaL - oldOmegaL; //actually.. the change in angular velocity
+    accelR = omegaR - oldOmegaR;
+
+    oldOmegaL = omegaL;
+    oldOmegaR = omegaR;
+
+    //////////////////////////////////////////////////////        P I D
+    
+    integral_feedback = totalClicksRight - totalClicksLeft; // how much more has RIGHT travelled than LEFT!
+    
+    proportional_feedback = current_R_clicks - current_L_clicks;    // how much faster is RIGHT than LEFT!
+
+    derivative_feedback = (proportional_feedback - old_proportional_feedback);
+
+    old_proportional_feedback = proportional_feedback;
+    
+    adjustAmount = integral_feedback * ERROR_CONSTANT_I + derivative_feedback * ERROR_CONSTANT_D + proportional_feedback * ERROR_CONSTANT_P;
+
+    totalAdjust += adjustAmount;
+
+    
+    adjusted = true;
+    ///////////////////////////////////////////////////////////      E N D   P I D 
+    current_R_clicks = 0;
+    current_L_clicks = 0; 
+  }
+  //else
+   // printStuff = false;
+  
+}
+
+
+void loop() {
+
+  getDistance();
+  hasSlowed = false;
+  while(stopThisBot)
+  {
+    getDistance();
+    delay(10);
+    tone(13, 512);
+  }
+  
+  noTone(13);
+  allLow();                       /////////// beginning of acceleration
+  digitalWrite(rightFWD, HIGH);
+  digitalWrite(leftFWD, HIGH);
+
+  adjustAmount = 5;
+  
+  integral_feedback = 0;
+  derivative_feedback = 0;
+  proportional_feedback = 0;
+  old_proportional_feedback = 0;
+  
+for (int PWM = 40; PWM < 250; PWM += 3) 
+{
+//  Serial.println(" LINE 147");
+  leftPWM = PWM + adjustAmount;
+  rightPWM = PWM;
+  
+  getDistance();
+  if (!stopThisBot)
+  {
+  //analogWrite(rightEN, PWM);  
+  //analogWrite(leftEN, PWM + adjustAmount);
+  analogWrite(rightEN, rightPWM);
+  analogWrite(leftEN, leftPWM);
+
+  delay(20);
+  }
+  else
+  {
+    if (!hasSlowed) 
+    {
+    
+      for (int slowDown = rightPWM; rightPWM > 30; rightPWM--)
+      {
+        analogWrite(rightEN, rightPWM);
+        analogWrite(leftEN, rightPWM - 10);  
+        delay(1);
+      }
+      delay(10);
+      allLow();
+    delay(500);
+    hasSlowed = true;
+    }
+  }
+  
+  if (PWM > 245)
+  {
+    ERROR_CONSTANT_P = 2;    
+    ERROR_CONSTANT_I = 3;
+    ERROR_CONSTANT_D = 1;
+   
+  }
+      if(adjusted)
+      {
+        
+        Serial.print("    - Adjusted -        P: ");
+        Serial.print(proportional_feedback);
+        
+        Serial.print("  I: ");
+        Serial.print(integral_feedback);
+        
+        Serial.print("  D: ");
+        Serial.print(derivative_feedback);     
+        
+        Serial.print(" adj: ");
+        Serial.println(adjustAmount);       
+            
+        adjusted = false;
+      }
+
+    if (printStuff)
+    {
+      Serial.print("            " );
+      Serial.print("L:");
+      Serial.print(totalClicksLeft);
+      Serial.print("  R:");
+      Serial.print(totalClicksRight);
+
+      Serial.print("  wL:");
+      Serial.print(omegaL);
+            
+      Serial.print("  wR:");
+      Serial.print(omegaR);
+
+      Serial.print("  aL:");
+      Serial.print(accelL);
+            
+      Serial.print("  aR:");
+      Serial.print(accelR);
+      
+      Serial.print("    t: ");
+      Serial.print(deltaMillis);
+
+      if (PWM + adjustAmount < 0)
+      adjustAmount = PWM * -1;
+
+      if (PWM + adjustAmount > 250)
+      adjustAmount = 250 - PWM;
+
+      Serial.print("  PWM_L:");
+      Serial.print(PWM + adjustAmount);
+
+      Serial.print("  PWM_R:");
+      Serial.println(PWM);
+      
+      printStuff = false;
+
+      
+    } // end if printstuff
+  
+} // end for loop
+
+  for (int counter = 0; counter < 250; counter++)
+  {
+
+  getDistance();
+  if (!stopThisBot)
+  {
+    analogWrite(leftEN, 250 + adjustAmount);    
+    delay(10);
+  }
+  else
+  {
+    if (!hasSlowed)
+    {
+      for (int slowDown = rightPWM; rightPWM > 30; rightPWM--)
+      {
+        analogWrite(rightEN, rightPWM);
+        analogWrite(leftEN, rightPWM - 10);  
+        delay(1);
+      }
+      delay(10);
+      allLow();
+      delay(500);
+      hasSlowed = true;
+    }
+  }
+    
+    if (printStuff)
+    {
+
+      Serial.print("FULL SPEED: " );
+      Serial.print("L:");
+      Serial.print(totalClicksLeft);
+      Serial.print("  R:");
+      Serial.print(totalClicksRight);
+
+      Serial.print("  wL:");
+      Serial.print(omegaL);
+
+      Serial.print("  wR:");
+      Serial.print(omegaR);
+    
+      Serial.print("  aL:");
+      Serial.print(accelL);
+            
+      Serial.print("  aR:");
+      Serial.print(accelR);
+
+      Serial.print("    t: ");
+      Serial.println(deltaMillis);
+      printStuff = false;
+      
+    } // end if printstuff
+
+
+      if(adjusted)
+      {
+        Serial.print("    - Adjusted -        P: ");
+        Serial.print(proportional_feedback);
+        
+        Serial.print("  I: ");
+        Serial.print(integral_feedback);
+        
+        Serial.print("  D: ");
+        Serial.print(derivative_feedback);     
+        
+        Serial.print(" adj: ");
+        Serial.println(adjustAmount);       
+            
+        adjusted = false;
+      }
+  
+  } // end for
+
+
+   ///////////////////////////////// STOPPING SEQUENCE
+
+    for (int slowDown = rightPWM; rightPWM > 30; rightPWM--)
+    {
+      analogWrite(rightEN, rightPWM);
+      analogWrite(leftEN, rightPWM - 10);  
+      delay(1);
+    }
+    delay(10);
+    allLow();
+    delay(500);
+    hasSlowed = true;
+
+  //allLow();
+  noTone(13);
+
+  delay(1500); // time between heats
+
+  current_R_clicks = 0;
+  current_L_clicks = 0;
+
+  totalClicksLeft = 0;
+  totalClicksRight = 0;
+
+}
+
+void allLow()
+{
+  digitalWrite(4, LOW);
+  digitalWrite(5, LOW); 
+  digitalWrite(6, LOW);
+  digitalWrite(7, LOW);
+  digitalWrite(9, LOW);  
+  digitalWrite(10, LOW);
+}
+
+void getDistance()
+{
+    digitalWrite(trigPin1, LOW);
+    delayMicroseconds(2);
+
+    digitalWrite(trigPin1, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(trigPin1, LOW);
+
+    duration = pulseIn(echoPin1, HIGH);
+    distance1 = duration*0.034/2;
+
+
+
+   // digitalWrite(trigPin2, LOW);
+   // delayMicroseconds(2);
+
+   // digitalWrite(trigPin2, HIGH);
+   // delayMicroseconds(10);
+    //digitalWrite(trigPin2, LOW);
+
+   // duration = pulseIn(echoPin2, HIGH);
+    //distance2 = duration*0.034/2;
+
+    if(distance1 < 20)
+      stopThisBot = true;
+    else
+      stopThisBot = false;
+
+   // Serial.print("D2:");
+    //Serial.println(distance2);
+
+    //if(distance2 < 20)
+    //{
+    //  tone(13, 500);      
+    //  analogWrite(leftEN, leftPWM + 30);
+    //  delay(50);
+
+   // }
+//    else
+  //    noTone(13);
+
+      
+}
