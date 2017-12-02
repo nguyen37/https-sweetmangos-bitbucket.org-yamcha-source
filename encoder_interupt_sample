@@ -1,10 +1,11 @@
 //Nicholas Nguyen
 //11/23/2017
 // pins for the encoder inputs
-#define RH_ENCODER_A 5
+#define RH_ENCODER_A 2
 #define RH_ENCODER_B 4
-#define LH_ENCODER_A 3
-#define LH_ENCODER_B 2
+#define LH_ENCODER_A 5
+#define LH_ENCODER_B 3
+bool encoder_state = 0;
 // variables to store the number of encoder pulses
 // for each motor
 
@@ -19,7 +20,7 @@ void setup() {
   pinMode(RH_ENCODER_B, INPUT);
   
   // initialize hardware interrupts
-  attachInterrupt(digitalPinToInterrupt(LH_ENCODER_A), leftEncoderEvent, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(LH_ENCODER_B), leftEncoderEvent, CHANGE);
   //attachInterrupt(digitalPinToInterrupt(LH_ENCODER_B), leftEncoderEvent, CHANGE);
   attachInterrupt(digitalPinToInterrupt(RH_ENCODER_A), rightEncoderEvent, CHANGE);
   //attachInterrupt(digitalPinToInterrupt(RH_ENCODER_B), rightEncoderEvent, CHANGE);
@@ -36,7 +37,7 @@ void loop() {
 }
 
 // encoder event for the interrupt call
-void leftEncoderEvent() {
+/*void leftEncoderEvent() {
   if (digitalRead(LH_ENCODER_A) == HIGH) {
     if (digitalRead(LH_ENCODER_B) == LOW) {
       leftCount++;
@@ -50,10 +51,17 @@ void leftEncoderEvent() {
       leftCount++;
     }
   }
+}*/
+void leftEncoderEvent() {
+  if(encoder_state == 0){
+    leftCount++;
+  }else{
+    leftCount--;
+  }
 }
 
 // encoder event for the interrupt call
-void rightEncoderEvent() {
+/*void rightEncoderEvent() {
   if (digitalRead(RH_ENCODER_A) == HIGH) {
     if (digitalRead(RH_ENCODER_B) == LOW) {
       rightCount++;
@@ -66,5 +74,12 @@ void rightEncoderEvent() {
     } else {
       rightCount++;
     }
+  }
+}*/
+void rightEncoderEvent() {
+  if(encoder_state == 0){
+    rightCount++;
+  }else{
+    rightCount--;
   }
 }
