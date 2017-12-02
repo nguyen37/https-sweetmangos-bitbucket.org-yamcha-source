@@ -1,0 +1,14 @@
+void straight(){
+  
+  analogWrite(LH_MOTOR_EN, 100);
+  analogWrite(RH_MOTOR_EN, 103);
+  digitalWrite(RH_MOTOR_A, LOW);
+  digitalWrite(RH_MOTOR_B, HIGH);
+  digitalWrite(LH_MOTOR_A, HIGH);
+  digitalWrite(LH_MOTOR_B, LOW);
+  delay (550);//540
+  analogWrite(LH_MOTOR_EN, 0);
+  delay(122); //110
+  analogWrite(RH_MOTOR_EN, 0);
+  delay (1000);
+}
