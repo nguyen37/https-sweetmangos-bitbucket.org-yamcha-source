@@ -34,3 +34,11 @@ https://www.pololu.com/product/989
 
 Caster Wheels:
 https://www.pololu.com/product/951
+
+### Useful PID Info ###
+Using Adjust += Wall Following:
+https://www.arduino.cc/reference/en/language/structure/compound-operators/compoundaddition/
+This uses Wall following method to inspect one wall and try to balance sensor to certain set value.
+
+
+
