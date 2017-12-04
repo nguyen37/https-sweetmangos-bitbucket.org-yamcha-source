@@ -1,0 +1,904 @@
+//Online Compiler: https://repl.it/repls/BoringEntireEidolonhelvum
+//Private: https://repl.it/@huannguyen15/Micromouse-Testbench
+#include <stdio.h>
+#include <string.h>
+//#include <stdlib.h>
+ 
+ char* instructionsToLetters(int instruction);
+ char* getInstructions(int (*cellWeight)[16], int (*cellWall)[16], int currentDir, int locY, int locX);
+ 
+int main () {
+
+   //int cellWall[16][16];
+   //int cellWeight[16][16];
+   // Direction facing | 1=North Y| 2=West | 3=South | 4=East
+   //int currentDir = 1;
+   //buildCellWall(cellWall);
+  // buildEmptyCellWeight(cellWeight);
+ //  updateWeight(cellWeight,cellWall);
+  // testMode(cellWall,cellWeight);
+  simulationMode();
+   return 0;
+}
+
+//------ TestBench ------
+void simulationMode(){
+  int cellWall[16][16];
+  int cellWeight[16][16];
+  int cellWallFull[16][16];
+  char instructionSet[100];
+  buildCellWall(cellWall);
+  buildEmptyCellWeight(cellWeight);
+  buildTestMaze(cellWallFull);
+  int locX=0;
+  int locY=0;
+  int currentDir = 1;//Adjust based on how mouse is Facing
+  int leftSensors;
+  int rightSensors;
+  int frontSensors;
+  int steps = 0;
+  char c;
+  
+  char decision;//for testing <-used for scanf
+  
+  while(!((locY==7||locY==8)&&(locX==7||locX==8))){
+    //check LeftIR Sensors
+    //leftSensors = getLeftIRSensors();
+    //check RightIR Sensors
+    //rightSensors = getRightIRSensors();
+    //check FrontIR Sensors
+    //frontSensors = getFrontIRSensors();
+    //check Direction and Block Walls Accordingly
+    switch(currentDir){
+      case 1://Facing North
+        //if(FrontIR shows blocked){
+        if(checkNorth(cellWallFull,locY,locX)==1){
+          blockNorth(cellWall,locY,locX);
+        }
+        
+        //if(LeftIR shows blocked){
+        if(checkWest(cellWallFull,locY,locX)==1){
+          blockWest(cellWall,locY,locX);
+        }
+        //if(RightIR shows blocked){
+        if(checkEast(cellWallFull,locY,locX)==1){
+          blockEast(cellWall,locY,locX);
+        }
+        break;
+      
+      case 2://Facing West
+        if(checkWest(cellWallFull,locY,locX)==1){
+          //if(FrontIR shows blocked){
+          blockWest(cellWall,locY,locX);
+        }
+        if(checkSouth(cellWallFull,locY,locX)==1){
+        //if(LeftIR shows blocked){
+          blockSouth(cellWall,locY,locX);
+        }
+        if(checkNorth(cellWallFull,locY,locX)==1){
+        //if(RightIR shows blocked){
+          blockNorth(cellWall,locY,locX);
+        }
+        break;
+      
+      case 3://Facing South
+        if(checkSouth(cellWallFull,locY,locX)==1){
+        //if(FrontIR shows blocked){
+          blockSouth(cellWall,locY,locX);
+        }
+        if(checkEast(cellWallFull,locY,locX)==1){
+        //if(LeftIR shows blocked){
+          blockEast(cellWall,locY,locX);
+        }
+        if(checkWest(cellWallFull,locY,locX)==1){
+        //if(RightIR shows blocked){
+          blockWest(cellWall,locY,locX);
+        }
+        break;
+      case 4://Facing East
+        if(checkEast(cellWallFull,locY,locX)==1){
+        //if(FrontIR shows blocked){
+          blockEast(cellWall,locY,locX);
+        }
+        if(checkNorth(cellWallFull,locY,locX)==1){
+        //if(LeftIR shows blocked){
+          blockNorth(cellWall,locY,locX);
+        }
+        if(checkSouth(cellWallFull,locY,locX)==1){
+        //if(RightIR shows blocked){
+          blockSouth(cellWall,locY,locX);
+        }
+        break;
+    }
+    //Reweight maze
+    updateWeight(cellWeight,cellWall);
+    //Get MazeInstructions
+    strcpy(instructionSet,getInstructions(cellWeight,cellWall,currentDir, 
+  locY,locX));
+    //Perform First Maze instructions
+    switch(instructionSet[0]){
+      case 'f':
+        // move forward one cell
+        break;
+      case 'r':
+        // turn 90 degree, move forward one cell
+        break;
+      case 'b':
+        // turn 180 degree, move forward one cell
+        break;
+      case 'l':
+        // turn -90 degree, move forward one cell
+        break;
+    }
+    
+    //Update location based on instructions
+    switch(currentDir){
+      // Direction facing | 1=North | 2=West | 3=South | 4=East
+      case 1://facing north
+        switch(instructionSet[0]){
+          case 'f': 
+            locY--;
+            break;
+          case 'r': 
+            currentDir = 4;
+            locX++;
+            break;
+          case 'b':
+            currentDir = 3;
+            locY++;
+            break;
+          case 'l':
+            currentDir = 2;
+            locX--;
+            break;
+        }
+        break; 
+      case 2://facing west 
+        switch(instructionSet[0]){
+          case 'f': 
+            locX--;
+            break;
+          case 'r':
+            currentDir = 1;
+            locY--;
+            break;
+          case 'b': 
+            currentDir = 4;
+            locX++;
+            break;
+          case 'l': 
+            currentDir = 3;
+            locY++;
+            break;
+        }
+        break; 
+      case 3://facing south
+        switch(instructionSet[0]){
+          case 'f': 
+            locY++;
+            break;
+          case 'r':
+            currentDir = 2;
+            locX--;
+            break;
+          case 'b': 
+            currentDir = 1;
+            locY--;
+            break;
+          case 'l': 
+            currentDir = 4;
+            locX++;
+            break;
+        }
+        break; 
+      case 4:// facing east
+        switch(instructionSet[0]){
+          case 'f': 
+            locX++;
+            break;
+          case 'r':
+            currentDir = 3;
+            locY++;
+            break;
+          case 'b': 
+            currentDir = 2;
+            locX--;
+            break;
+          case 'l': 
+            currentDir = 1;
+            locY--;
+            break;
+        }
+        break; 
+    }
+    
+    //clear instructionSet and static instructions
+    memset(instructionSet, 0, strlen(instructionSet));
+    
+    // Below is for testing
+    printCell(cellWall);
+    printCell(cellWeight);
+    printLocation(cellWall,locY,locX);
+    steps++;
+    printf("steps: %d\n",steps);
+    printf("Next step? y/n");
+    scanf("%c",&decision);
+    while ((c = getchar()) != '\n' && c != EOF) { } // clear the buffer
+    if(decision=='n'){
+      return 0;
+    }
+    
+  }
+}
+  
+void testMode(int (*cellWall)[16],int (*cellWeight)[16]){
+  printf("Test Bench Mode Activated\n");
+  int endTest = 1;
+  char instructions[100];
+  char instruction;
+  int currentDir;
+  int c;
+  int y;
+  int x;
+  while(endTest==1){
+    printf("Enter Instruction:");
+    scanf("%c",&instruction);
+    while ( (c = getchar()) != '\n' && c != EOF ) { }
+    printf("------------------------------\n");
+    switch(instruction){
+      case 'p'://printMaze
+        printCell(cellWall);
+        break;
+      case 'l':
+        printCell(cellWeight);
+        break;
+      case 'n'://blockNorth
+        printf("\nX Coordinate:");
+        scanf("%d",&x);
+        printf("\n");
+        printf("Y Coordinate:");
+        scanf("%d",&y);
+        printf("\n");
+        blockNorth(cellWall,y,x);
+        //updateCell(cellWall,y,x);
+        printCell(cellWall);
+        break;
+      case 'e'://blockEastq
+        printf("\nX Coordinate:");
+        scanf("%d",&x);
+        printf("\n");
+        printf("Y Coordinate:");
+        scanf("%d",&y);
+        printf("\n");
+        blockEast(cellWall,y,x);
+        //updateCell(cellWall,y,x);
+        printCell(cellWall);
+        break;
+      case 's'://blockSouth
+        printf("\nX Coordinate:");
+        scanf("%d",&x);
+        printf("\n");
+        printf("Y Coordinate:");
+        scanf("%d",&y);
+        printf("\n");
+        blockSouth(cellWall,y,x);
+        //updateCell(cellWall,y,x);
+        printCell(cellWall);
+        break;
+      case 'w'://blockWest
+        printf("\nX Coordinate:");
+        scanf("%d",&x);
+        printf("\n");
+        printf("Y Coordinate:");
+        scanf("%d",&y);
+        printf("\n");
+        blockWest(cellWall,y,x);
+        //updateCell(cellWall,y,x);
+        printCell(cellWall);
+        break;
+      
+      case 'q':
+        endTest = 2;
+        printf("Test Bench Ended\n");
+        break;
+      
+      case 't':
+        updateWeight(cellWeight,cellWall);
+        printCell(cellWeight);
+        break;
+      case 'u':
+        printf("\nX Coordinate:");
+        scanf("%d",&x);
+        printf("\n");
+        printf("Y Coordinate:");
+        scanf("%d",&y);
+        printf("\n");
+        updateCell(cellWall,y,x);
+        break;
+      case 'm':
+        buildTestMaze(cellWall);
+        break;
+      
+      case 'a':
+        printf("\nX Coordinate:");
+        scanf("%d",&x);
+        //printf("\n");
+        printf("Y Coordinate:");
+        scanf("%d",&y);
+        printf("N=1|W=2|S=3|E=4|current Direction: ");
+        scanf("%d",&currentDir);
+        //printf("\n");
+        int r = getCellInstruction(cellWeight, cellWall, currentDir, y, x);
+        printf("cell instruction %d\n",r);
+        break;
+      
+      case 'o':
+        printf("f=1|rf=31|rrf=331|lf=21: ");
+        scanf("%d",&x);
+        char asdf[2];
+        strcpy(asdf,instructionsToLetters(x));
+        printf("%s",asdf);
+        break;
+      
+      case 'z':
+        memset(instructions, 0, strlen(instructions));
+        printf("\nX Coordinate:");
+        scanf("%d",&x);
+        //printf("\n");
+        printf("Y Coordinate:");
+        scanf("%d",&y);
+        printf("N=1|W=2|S=3|E=4|current Direction: ");
+        scanf("%d",&currentDir);
+        strcpy(instructions,getInstructions(cellWeight, cellWall,currentDir, 
+  y, x));
+        printf("maze instructions: %s\n",instructions);
+        break;
+      default:
+        printf("(q)exit test mode\n");
+        printf("(p)print maze walls\n");
+        printf("(t)update&print maze weight");
+        printf("(l)print maze weight");
+        printf("(n)block off north at a cell\n");
+        printf("(e)block off east at a cell\n");
+        printf("(s)block off south at a cell\n");
+        printf("(w)block off west at a cell\n\n");
+        
+        break;
+    }
+  }
+}
+
+void printCell(int (*cellWall)[16]){
+  int i,j;
+  printf("__|__0____1____2____3____4____5____6____7____8____9___10___11___12___13___14___15_\n00");
+  for(i=0;i<16;i++){
+    for(j=0;j<16;j++){
+      printf("|%04d",cellWall[i][j]);
+    }
+    if(i<15){
+      printf("\n%02d",i+1);
+    }
+  }
+  printf("\n");
+}
+
+void printLocation(int (*cellWall)[16],int y, int x){
+  int i,j;
+  printf("__|__0____1____2____3____4____5____6____7____8____9___10___11___12___13___14___15_\n00");
+  for(i=0;i<16;i++){
+    for(j=0;j<16;j++){
+      if((i==y)&&(j==x)){
+        printf("|****");
+      }else{
+        printf("|%04d",cellWall[i][j]);
+      }
+    }
+    if(i<15){
+      printf("\n%02d",i+1);
+    }
+  }
+  printf("\n");
+}
+
+void buildTestMaze(int (*cellWall)[16]){
+  int i;
+  int t;
+  //Block East Walls for all colums
+  for(i=0;i<15;i++){
+    switch(i){
+      case 0:
+        for(t=0;t<7;t++){blockEast(cellWall, t,i);}
+        for(t=8;t<15;t++){blockEast(cellWall, t,i);}
+        break;
+      case 1:
+        blockEast(cellWall, 2,i);
+        blockEast(cellWall, 4,i);
+        for(t=9;t<14;t++){blockEast(cellWall, t,i);}
+        break;
+      case 2:
+        for(t=10;t<15;t++){blockEast(cellWall, t,i);}
+        break;
+      case 3:
+        for(t=10;t<14;t++){blockEast(cellWall, t,i);}
+        break;
+      case 4:
+        for(t=11;t<13;t++){blockEast(cellWall, t,i);}
+        break;
+      case 5:
+        blockEast(cellWall, 8,i);
+        break;
+      case 6:
+        blockEast(cellWall, 3,i);
+        blockEast(cellWall, 5,i);
+        for(t=7;t<9;t++){blockEast(cellWall, t,i);}
+        break;
+      case 7:
+        for(t=3;t<7;t++){blockEast(cellWall, t,i);}
+        break;
+      case 8:
+        for(t=3;t<7;t++){blockEast(cellWall, t,i);}
+        blockEast(cellWall, 8,i);
+        break;
+      case 9:
+        blockEast(cellWall, 9,i);
+        for(t=4;t<8;t++){blockEast(cellWall, t,i);}
+        break;
+      case 10:
+        blockEast(cellWall, 10,i);
+        for(t=4;t<9;t++){blockEast(cellWall, t,i);}
+        break;
+      case 11:
+        for(t=4;t<9;t++){blockEast(cellWall, t,i);}
+        for(t=10;t<12;t++){blockEast(cellWall, t,i);}
+        break;
+      case 12:
+        for(t=4;t<13;t++){blockEast(cellWall, t,i);}
+        break;
+      case 13:
+        for(t=3;t<15;t++){blockEast(cellWall, t,i);}
+        blockEast(cellWall, 1,i);
+        break;
+      case 14:
+        for(t=1;t<15;t++){blockEast(cellWall, t,i);}
+        break;
+      default:
+        break;
+    }
+  }
+  //Block South Walls for all rows
+  for(i=0;i<15;i++){
+    switch(i){
+      case 0:
+        for(t=2;t<14;t++){blockSouth(cellWall, i,t);}
+        break;
+      case 1:
+        for(t=2;t<14;t++){blockSouth(cellWall, i,t);}
+        break;
+      case 2:
+        for(t=2;t<7;t++){blockSouth(cellWall, i,t);}
+        for(t=9;t<14;t++){blockSouth(cellWall, i,t);}
+        break;
+      case 3:
+        for(t=2;t<7;t++){blockSouth(cellWall, i,t);}
+        blockSouth(cellWall, i,10);
+        blockSouth(cellWall, i,12);
+        break;
+      case 4:
+        for(t=2;t<7;t++){blockSouth(cellWall, i,t);}
+        break;
+      case 5:
+        for(t=2;t<7;t++){blockSouth(cellWall, i,t);}
+        break;
+      case 6:
+        for(t=1;t<8;t++){blockSouth(cellWall, i,t);}
+        break;
+      case 7:
+        for(t=1;t<6;t++){blockSouth(cellWall, i,t);}
+        blockSouth(cellWall, i,9);
+        break;
+      case 8:
+        blockSouth(cellWall, i,10);
+        for(t=2;t<6;t++){blockSouth(cellWall, i,t);}
+        for(t=7;t<9;t++){blockSouth(cellWall, i,t);}
+        break;
+      case 9:
+        for(t=4;t<10;t++){blockSouth(cellWall, i,t);}
+        blockSouth(cellWall, i,11);
+        break;
+      case 10:
+        for(t=5;t<11;t++){blockSouth(cellWall, i,t);}
+        break;
+      case 11:
+        for(t=6;t<12;t++){blockSouth(cellWall, i,t);}
+        break;
+      case 12:
+        for(t=5;t<13;t++){blockSouth(cellWall, i,t);}
+        break;
+      case 13:
+        for(t=4;t<13;t++){blockSouth(cellWall, i,t);}
+        break;
+      case 14:
+        for(t=1;t<14;t++){blockSouth(cellWall, i,t);}
+        break;
+      default:
+        break;
+    }
+  }
+} 
+// ------ TestBench Ends ------
+
+// ------Maze Wall Functions------
+void buildCellWall(int (*cellWall)[16]){
+  int i,j;
+  for(i=0;i<16;i++){
+    for(j=0;j<16;j++){
+      cellWall[i][j] = 0;
+      if(j==0){//west wall
+        cellWall[i][j] = cellWall[i][j]+1;
+      }
+      if(j==15){
+        cellWall[i][j] = cellWall[i][j]+100;
+      }
+      if(i==0){
+        cellWall[i][j] = cellWall[i][j]+1000;
+      }
+      if(i==15){
+        cellWall[i][j] = cellWall[i][j]+10;
+      }
+    }
+  }
+}
+
+void blockNorth(int (*cellWall)[16], int i,int j){
+  if(checkNorth(cellWall,i,j)==0){
+    cellWall[i][j] = cellWall[i][j] + 1000;
+    cellWall[i-1][j] = cellWall[i-1][j] + 10;
+  }
+}
+void blockEast(int (*cellWall)[16], int i,int j){
+  if(checkEast(cellWall,i,j)==0){
+    cellWall[i][j] = cellWall[i][j] + 100;
+    cellWall[i][j+1] = cellWall[i][j+1] + 1;
+  }
+}
+void blockSouth(int (*cellWall)[16], int i,int j){
+  if(checkSouth(cellWall,i,j)==0){
+    cellWall[i][j] = cellWall[i][j] + 10;
+    cellWall[i+1][j] = cellWall[i+1][j] + 1000;
+  }
+}
+void blockWest(int (*cellWall)[16], int i,int j){
+  if(checkWest(cellWall,i,j)==0){
+    cellWall[i][j] = cellWall[i][j] + 1;
+    cellWall[i][j-1] = cellWall[i][j-1] + 100;
+  }
+}
+void updateCell(int (*cellWall)[16], int y, int x){
+  if(checkSouth(cellWall,y,x)==1){
+    blockNorth(cellWall,(y+1),x);
+  }
+  if(checkEast(cellWall,y,x)==1){
+    blockWest(cellWall,y,(x+1));
+  }
+  if(checkNorth(cellWall,y,x)==1){
+    blockSouth(cellWall,(y-1),x);
+  }
+  if(checkWest(cellWall,y,x)==1){
+    blockEast(cellWall,y,(x-1));
+  }
+}
+
+//checks NESW, return 0 for open wall and 1 for closed walls
+int checkNorth(int (*cellWall)[16], int y, int x){return (cellWall[y][x]/1000)%10;}
+int checkEast(int (*cellWall)[16], int y, int x){return (cellWall[y][x]/100)%10;}
+int checkSouth(int (*cellWall)[16], int y, int x){return (cellWall[y][x]/10)%10;}
+int checkWest(int (*cellWall)[16], int y, int x){return (cellWall[y][x]/1)%10;}
+
+void buildEmptyCellWeight(int (*cellWeight)[16]){
+  int x,y;
+  for(y=0;y<16;y++){
+    for(x=0;x<16;x++){
+      if(((x==7)||(x==8))&&((y==7)||(y==8))){
+        cellWeight[y][x] = 0;
+      }else{
+        cellWeight[y][x] = 9999;
+      }
+    }
+  }
+}
+
+// ------Maze's Weight Functions------
+int checkCellFull(int (*cellWeight)[16]){
+  int y,x;
+  for(y=0;y<16;y++){
+    for(x=0;x<16;x++){
+      if(cellWeight[y][x]==9999){
+        return 1;
+      }
+    }
+  }
+  return 0;
+}
+void updateWeight(int (*cellWeight)[16], int (*cellWall)[16]){
+	
+  int numSet=0;
+  buildEmptyCellWeight(cellWeight);
+  while(checkCellFull(cellWeight) == 1){
+    int y,x;
+    for(y=0;y<16;y++){
+      for(x=0;x<16;x++){
+        if(cellWeight[y][x]==numSet){
+          if(checkNorth(cellWall,y,x)==0){
+            if(cellWeight[y-1][x]==9999){
+              cellWeight[y-1][x]=(numSet+1);
+            }
+          }
+          if(checkSouth(cellWall,y,x)==0){
+            if(cellWeight[y+1][x]==9999){
+              cellWeight[y+1][x]=(numSet+1);
+            }
+          }
+          if(checkEast(cellWall,y,x)==0){
+            if(cellWeight[y][x+1]==9999){
+              cellWeight[y][x+1]=(numSet+1);
+            }
+          }
+          if(checkWest(cellWall,y,x)==0){
+            if(cellWeight[y][x-1]==9999){
+              cellWeight[y][x-1]=(numSet+1);
+            }
+          }
+        }
+      }
+    }
+    numSet++;
+  }
+  //cellWeight[7][7] = 0;
+  //cellWeight[7][8] = 0;
+  //cellWeight[8][7] = 0;
+  //cellWeight[8][8] = 0;
+}
+
+//------ Directions Controls ------
+int changeDirection(int currentDir, int nextDir){
+	// nextDir can only be right or left, right=1; left=0;
+	switch(currentDir){
+		case 1:// Facing North
+			if(nextDir == 1){return 4;}
+			if(nextDir == 0){return 2;}
+			break;
+		case 2:// Facing West
+			if(nextDir == 1){return 1;}
+			if(nextDir == 0){return 3;}
+			break;
+		case 3:// Facing South
+			if(nextDir == 1){return 2;}
+			if(nextDir == 0){return 4;}
+			break;
+		case 4:// Facing East
+			if(nextDir == 1){return 3;}
+			if(nextDir == 0){return 1;}
+			break;
+		default:// currentDirection passed wrong 
+			return -1;
+			break;
+	}
+	return -1;
+}
+
+int convertInstructions(int currentDirection, int instruction){
+  // forward=1, left=2, right=1
+  //instruction | N=1, E=2, S=3, W=4
+  // Direction facing | 1=North | 2=West | 3=South | 4=East
+  switch(instruction){
+    case 1: // Go North
+      switch(currentDirection){
+        case 1://Facing North
+          return 1;
+          break;
+        case 2://Facing West
+          return 31;
+          break;
+        case 3://Facing South
+          return 331;
+          break;
+        case 4://Facing East
+          return 21;
+          break;
+      }
+      break;
+    case 2: // Go East
+      switch(currentDirection){
+        case 1://Facing North
+          return 31;
+          break;
+        case 2://Facing West
+          return 331;
+          break;
+        case 3://Facing South
+          return 21;
+          break;
+        case 4://Facing East
+          return 1;
+          break;
+      }
+      break;
+    case 3: // Go South
+      switch(currentDirection){
+        case 1://Facing North
+          return 331;
+          break;
+        case 2://Facing West
+          return 21;
+          break;
+        case 3://Facing South
+          return 1;
+          break;
+        case 4://Facing East
+          return 31;
+          break;
+      }
+      break;
+    case 4: // Go West
+      switch(currentDirection){
+        case 1://Facing North
+          return 21;
+          break;
+        case 2://Facing West
+          return 1;
+          break;
+        case 3://Facing South
+          return 31;
+          break;
+        case 4://Facing East
+          return 331;
+          break;
+      }
+      break;
+  }
+  return 9; // invalid pass
+}
+
+// ------ Navigation Controls ------
+
+//Gets the best choice instruction for a cell
+int getCellInstruction(int (*cellWeight)[16], int (*cellWall)[16], int currentDir, int locY, int locX){
+  int n = 9999;
+  int e = 9999;
+  int s = 9999;
+  int w = 9999;
+  
+  if((checkNorth(cellWall,locY,locX)==0) && (cellWeight[locY][locX]>cellWeight[locY-1][locX])){
+    n = cellWeight[locY-1][locX];
+  }// set n = weight if open and less than current location
+  
+  if((checkSouth(cellWall,locY,locX)==0) && (cellWeight[locY][locX]>cellWeight[locY+1][locX])){
+    s = cellWeight[locY+1][locX];
+  }// set s = weight if open and less than current location
+  
+  if((checkEast(cellWall,locY,locX)==0) && (cellWeight[locY][locX]>cellWeight[locY][locX+1])){
+    e = cellWeight[locY][locX+1];
+  }// set e = weight if open and less than current location
+  
+  if((checkWest(cellWall,locY,locX)==0) && (cellWeight[locY][locX]>cellWeight[locY][locX-1])){
+    w = cellWeight[locY][locX-1];
+  }// set w = weight if open and less than current location
+  
+  if(n<=e && n<=s && n<=w){return convertInstructions(currentDir,1);}
+  if(e<=n && e<=s && e<=w){return convertInstructions(currentDir,2);}
+  if(s<=e && s<=n && s<=w){return convertInstructions(currentDir,3);}
+  if(w<=e && w<=s && w<=n){return convertInstructions(currentDir,4);}
+  //This can further be optimized to pick certain direction over others depending on quardants
+}
+
+//returns a string encoded instructions based on mouse location
+char* getInstructions(int (*cellWeight)[16], int (*cellWall)[16], int currentDir, 
+  int locY, int locX){
+  static char instructionSet[100] = "";
+  memset(instructionSet, 0, strlen(instructionSet));
+  int tempInstruction;
+  char tempChar[2];
+  int steps = 0;
+  
+  while(!((locY==7||locY==8)&&(locX==7||locX==8))){
+    tempInstruction = getCellInstruction(cellWeight, cellWall, currentDir, locY, locX);
+    strcpy(tempChar,instructionsToLetters(tempInstruction));
+    strcat(instructionSet,tempChar);
+    // updates location of mouse and direction based on new set of instruction
+    switch(currentDir){
+      // Direction facing | 1=North | 2=West | 3=South | 4=East
+      case 1://facing north
+        switch(tempInstruction){
+          case 1: 
+            locY--;
+            break;
+          case 31: 
+            currentDir = 4;
+            locX++;
+            break;
+          case 331:
+            currentDir = 3;
+            locY++;
+            break;
+          case 21:
+            currentDir = 2;
+            locX--;
+            break;
+        }
+        break; 
+      case 2://facing west 
+        switch(tempInstruction){
+          case 1: 
+            locX--;
+            break;
+          case 31:
+            currentDir = 1;
+            locY--;
+            break;
+          case 331: 
+            currentDir = 4;
+            locX++;
+            break;
+          case 21: 
+            currentDir = 3;
+            locY++;
+            break;
+        }
+        break; 
+      case 3://facing south
+        switch(tempInstruction){
+          case 1: 
+            locY++;
+            break;
+          case 31:
+            currentDir = 2;
+            locX--;
+            break;
+          case 331: 
+            currentDir = 1;
+            locY--;
+            break;
+          case 21: 
+            currentDir = 4;
+            locX++;
+            break;
+        }
+        break; 
+      case 4:// facing east
+        switch(tempInstruction){
+          case 1: 
+            locX++;
+            break;
+          case 31:
+            currentDir = 3;
+            locY++;
+            break;
+          case 331: 
+            currentDir = 2;
+            locX--;
+            break;
+          case 21: 
+            currentDir = 1;
+            locY--;
+            break;
+        }
+        break; 
+    }
+    steps++;
+  }
+  return instructionSet;
+}
+
+char* instructionsToLetters(int instruction){//
+  static char pass[1];
+  switch(instruction){
+    case 1: strcpy(pass,"f"); break; //forward 
+    case 31 : strcpy(pass,"r"); break;//right, forward (90 degree then forward)
+    case 331: strcpy(pass,"b"); break;//right, right, forward (180 degree then forward)
+    case 21: strcpy(pass,"l"); break;//left, forward(-90 degree then forward)
+  }
+  return pass;
+}
+
+
+
