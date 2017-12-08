@@ -1,14 +1,15 @@
 #include <SharpDistSensor.h> //IR sensor library
-
+ 
 void rightEncoderEvent(void);
 void rightEncoderEvent(void);
-//void move_forward(void);
-//void move_backward(void);
+void move_forward(void);
 void right_turn(void);
 void left_turn(void);
+
 void go_straight(void);
 bool encoder_state = false;
-
+bool turn = false;
+ 
 // pins for the encoder inputs
 #define RH_ENCODER_A 2
 #define RH_ENCODER_B 4
@@ -16,7 +17,8 @@ bool encoder_state = false;
 #define LH_ENCODER_B 3
 volatile unsigned long leftCount = 0;
 volatile unsigned long rightCount = 0;
-
+volatile unsigned long current_LH = 0;
+ 
 volatile unsigned long RH_totalcount = 0;
 volatile unsigned long RH_current_count = 0;
 //pins for motor controls
@@ -27,15 +29,15 @@ volatile unsigned long RH_current_count = 0;
 #define LH_MOTOR_B 7
 #define LH_MOTOR_EN 6
 int SPEED = 100;     //SET SPEED OF MOTORS HERE
-
-
+ 
+ 
 //IR SENSOR SETUP:
 //pins for IR sensors
 const byte RH_IR_pin = A0;
 const byte LH_IR_pin = A1;
 const byte CN_IR_pin = A2;
 //Window size of the median filter (odd number, 1 = no filtering)
-const byte mediumFilterWindowSize = 5; 
+const byte mediumFilterWindowSize = 5;
 // Create an object instance of the SharpDistSensor class
 SharpDistSensor RH_IR(RH_IR_pin, mediumFilterWindowSize);
 SharpDistSensor LH_IR(LH_IR_pin, mediumFilterWindowSize);
@@ -47,7 +49,7 @@ const unsigned int maxVal = 400; // ~20mm     362
 unsigned int RH_dist_val = 0;
 unsigned int LH_dist_val = 0;
 unsigned int CN_dist_val = 0;
-
+ 
 ////////////////////////////           FOR PID       ////////////////////////////
 float ERROR_CONSTANT_P = 6; //P = 6; D = 1
 float ERROR_CONSTANT_I = 0;
@@ -61,9 +63,9 @@ volatile float adjustAmount = 0;
 volatile double LH_current_count = 0;
 volatile double desired_tick_val = 0;
 int deltaMillis=0, oldMillis=0;
-
+//int current_LH = 0;
 // variables to store the number of encoder pulses for each motor
-
+ 
 void setup() {
   //intialize encoders
   pinMode(LH_ENCODER_A, INPUT);
@@ -78,47 +80,81 @@ void setup() {
   // initialize hardware interrupts
   attachInterrupt(digitalPinToInterrupt(LH_ENCODER_B), leftEncoderEvent, CHANGE);
   attachInterrupt(digitalPinToInterrupt(RH_ENCODER_A), rightEncoderEvent, CHANGE);
-
+ 
   RH_IR.setPolyFitCoeffs(nbCoefficients, polyCoefficients, minVal, maxVal);
   LH_IR.setPolyFitCoeffs(nbCoefficients, polyCoefficients, minVal, maxVal);
   CN_IR.setPolyFitCoeffs(nbCoefficients, polyCoefficients, minVal, maxVal);
-  Serial.begin(9600); 
+  Serial.begin(9600);
 }
-
+ 
 void loop() {
-  move_forward();
-  // Wait some time
-  delay(10);
+  //get_dist();
+    //Serial.println("CN_MOTOR_EN");
+    //Serial.println(CN_dist_val);
+  //if(current_LH >= 1459){
+    /*analogWrite(LH_MOTOR_EN, 0);
+    delay(50);
+    analogWrite(RH_MOTOR_EN, 0);
+    delay (500);
+    get_dist();
+    Serial.println("LH_MOTOR_EN");
+    Serial.println(LH_dist_val);
+ 
+    Serial.println("RH_MOTOR_EN");
+    Serial.println(RH_dist_val);
+ 
+    Serial.println("CN_MOTOR_EN");
+    Serial.println(CN_dist_val);
+    if(RH_dist_val>100 && RH_dist_val<199){
+      analogWrite(LH_MOTOR_EN, 30);
+      delay (400);
+      }else if(LH_dist_val>100 && LH_dist_val<199){
+      analogWrite(RH_MOTOR_EN, 30);
+      delay(400);
+      }else if(CN_dist_val>100 && CN_dist_val<199){
+      move_forward(); 
+      }
+      current_LH = 0;
+    }else{
+      move_forward();
+      }*/
+      get_dist();
+      move_forward();
+ 
+     
 }
-
+ 
 // encoder event for the interrupt call
 void leftEncoderEvent() {
-  if(encoder_state == 0){
+  if(turn == false){
     leftCount++;
-    referenceCount++;
-  }else{
-    leftCount--;
+    current_LH++;
   }
+ 
+  
 }
 // encoder event for the interrupt call
 void rightEncoderEvent() {
-  RH_totalcount++; //begin PID for encoder ticks
+  if(turn == false){
+    RH_totalcount++; //begin PID for encoder ticks
+  }
   if(RH_totalcount % 40 == 0)
   {
     deltaMillis = millis() - oldMillis;
     oldMillis = millis();
-    desired_tick_val = leftCount; 
-    error = desired_tick_val - RH_totalcount;  //calculates error [SETPOINT - MEASURED]      
+    desired_tick_val = leftCount;
+    error = desired_tick_val - RH_totalcount;  //calculates error [SETPOINT - MEASURED]     
     proportional_feedback = ERROR_CONSTANT_P * error;
     derivative_feedback = (proportional_feedback - old_proportional_feedback)/ deltaMillis;
     old_proportional_feedback = proportional_feedback;
     integral_feedback = integral_feedback + error;
     adjustAmount = proportional_feedback + integral_feedback * ERROR_CONSTANT_I + derivative_feedback * ERROR_CONSTANT_D;
   }
+  
 }
-
-
-
+ 
+ 
+ 
 void move_forward() {
   digitalWrite(RH_MOTOR_A, LOW);
   digitalWrite(RH_MOTOR_B, HIGH);
@@ -126,15 +162,16 @@ void move_forward() {
   digitalWrite(LH_MOTOR_B, LOW);
   int  driveR = SPEED + adjustAmount;
   int driveL = SPEED;
-  if((driveR) >= 255) {
+  if((driveR) >= 255) {                 //Makes sure motors can't go above the max PWM speed
     driveR = 255;
   }
-  if((driveR) <= 5) {
+  if((driveR) <= 5) {                  //Makes sure motors can't go below the minimum PWM speed
     driveR = 5;
   }
   analogWrite(RH_MOTOR_EN, driveR);
   analogWrite(LH_MOTOR_EN, driveL);
-  //debug:
+    } 
+  //use to debug:
   //Serial.print("Right Motor speed = ");
   //Serial.println(driveR);
   //Serial.print("RH motor clicks = ");
@@ -147,11 +184,24 @@ void move_forward() {
   //Serial.println(integral_feedback);
   //Serial.print("Adjust Amount: ");
   //Serial.println(adjustAmount);
-}
-
+ 
 void get_dist() {
   //read IR sensor values:
   RH_dist_val = RH_IR.getDist();
   LH_dist_val = LH_IR.getDist();
   CN_dist_val = CN_IR.getDist();
+  if(RH_dist_val>200){
+    RH_dist_val = 0;
+    //RH_totalcount++;
+    RH_totalcount--;              //if close to RH wall, decrement RH_totalcount; Result: RH motor will speed up
+    }
+    if(CN_dist_val>200){
+    CN_dist_val = 0;
+    }
+    if(LH_dist_val>200){
+    LH_dist_val = 0;
+    //RH_totalcount--;
+    RH_totalcount++;              //if close to LH wall, increment RH_totalcount; Result: RH motor will slow down
+    }
+ 
 }
